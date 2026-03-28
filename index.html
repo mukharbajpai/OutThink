@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>India ADAS Opportunity Map — L&T</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+:root {
+  --ink: #0f1923;
+  --paper: #f5f1eb;
+  --accent: #c8372d;
+  --accent2: #1a4f8a;
+  --accent3: #e8a020;
+  --green: #1e7a4a;
+  --muted: #8a8278;
+  --border: #d8d0c4;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+@media(max-width:900px){ html, body { overflow: auto; height: auto; } }
+body { font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(--ink); }
+
+header {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 16px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 3px solid var(--accent);
+  height: 62px;
+}
+.h-left { display: flex; flex-direction: column; gap: 1px; }
+.h-eyebrow { font-family: 'DM Mono', monospace; font-size: 9.5px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--accent); }
+.h-title { font-family: 'Playfair Display', serif; font-size: 19px; font-weight: 700; }
+.h-right { display: flex; align-items: center; gap: 16px; }
+.badge { font-family: 'DM Mono', monospace; font-size: 9.5px; letter-spacing: 1.5px; text-transform: uppercase; padding: 4px 12px; border-radius: 2px; }
+.b-go { background: var(--green); color: white; }
+.b-vis { background: var(--accent); color: white; }
+.team-tag { font-size: 10.5px; color: rgba(247,244,239,0.4); font-family: 'DM Mono', monospace; }
+
+.ticker { background: var(--accent2); color: white; font-family: 'DM Mono', monospace; font-size: 11px; padding: 5px 0; overflow: hidden; white-space: nowrap; height: 28px; }
+.ticker-inner { display: inline-block; animation: tick 34s linear infinite; }
+.ticker-inner span { margin: 0 36px; opacity: 0.8; }
+.ticker-inner span b { color: #90d0ff; }
+@keyframes tick { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+.layout { display: grid; grid-template-columns: 1fr 390px; height: calc(100vh - 90px); overflow: hidden; }
+@media(max-width:900px){ .layout { grid-template-columns: 1fr; height: auto; } }
+
+/* MAP */
+.map-area { display: flex; flex-direction: column; padding: 20px 28px 14px; gap: 12px; overflow: hidden; }
+.map-top { display: flex; align-items: flex-start; justify-content: space-between; flex-shrink: 0; gap: 16px; }
+.map-title { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 900; line-height: 1.2; }
+.map-sub { font-size: 11px; color: var(--muted); margin-top: 3px; line-height: 1.5; }
+
+.legend { background: white; border: 1px solid var(--border); border-radius: 6px; padding: 11px 14px; display: flex; flex-direction: column; gap: 5px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); min-width: 158px; flex-shrink: 0; }
+.leg-ttl { font-family: 'DM Mono', monospace; font-size: 8.5px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+.leg-row { display: flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 500; }
+.swatch { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
+.swatch.sq { border-radius: 2px; }
+.divider { height: 1px; background: var(--border); margin: 2px 0; }
+
+.map-container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+  background: linear-gradient(145deg, #b8dfe8 0%, #cde8f0 40%, #b0d8e4 100%);
+  border: 1px solid rgba(26,79,138,0.2);
+  box-shadow: 0 6px 40px rgba(15,25,35,0.12), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+#map-svg { width: 100%; height: 100%; display: block; }
+
+.state { cursor: pointer; transition: filter 0.15s, stroke-width 0.15s, opacity 0.15s; stroke: rgba(255,255,255,0.75); stroke-width: 0.7; stroke-linejoin: round; }
+.state:hover { filter: brightness(1.18) saturate(1.15); stroke: white; stroke-width: 1.8; }
+.state.sel { stroke: #0f1923; stroke-width: 2.2; filter: brightness(1.1) saturate(1.2); }
+
+.corridor { fill: none; stroke: #c8372d; stroke-width: 1.8; stroke-dasharray: 6,4; opacity: 0.55; pointer-events: none; }
+.city-ring { fill: none; stroke-width: 1; opacity: 0.4; pointer-events: none; }
+.city-dot-el { cursor: pointer; transition: r 0.15s; }
+.state-lbl { pointer-events: none; font-family: 'DM Mono', monospace; fill: rgba(255,255,255,0.72); font-weight: 500; }
+.sam-lbl { pointer-events: none; font-family: 'DM Mono', monospace; fill: rgba(255,255,255,0.55); }
+
+#tt {
+  position: absolute;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  padding: 5px 10px;
+  border-radius: 4px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s;
+  white-space: nowrap;
+  border-left: 3px solid var(--accent3);
+  z-index: 50;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+}
+#tt.on { opacity: 1; }
+
+/* METRIC STRIP */
+.metric-strip { display: grid; grid-template-columns: repeat(4,1fr); gap: 1px; background: var(--border); border-radius: 6px; overflow: hidden; border: 1px solid var(--border); flex-shrink: 0; }
+@media(max-width:700px){ .metric-strip { grid-template-columns: repeat(2,1fr); } }
+.mc { background: white; padding: 10px 13px; display: flex; flex-direction: column; gap: 1px; }
+.mc-lbl { font-family: 'DM Sans', sans-serif; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: #0f1923; opacity: 0.65; font-weight: 600; }
+.mc-val { font-family: 'DM Sans', sans-serif; font-size: 20px; font-weight: 700; line-height: 1.1; color: #0f1923; }
+.mc-sub { font-size: 10.5px; color: #0f1923; opacity: 0.55; }
+
+/* SIDEBAR */
+.sidebar { background: var(--ink); color: var(--paper); display: flex; flex-direction: column; overflow: hidden; border-left: 1px solid rgba(255,255,255,0.07); }
+.tabs { display: flex; border-bottom: 1px solid rgba(255,255,255,0.08); flex-shrink: 0; }
+.tb { flex: 1; padding: 13px 4px; background: none; border: none; color: rgba(247,244,239,0.38); font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 1.2px; text-transform: uppercase; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.18s; }
+.tb.on { color: var(--paper); border-bottom-color: var(--accent); }
+.tb:hover { color: rgba(247,244,239,0.75); }
+
+.pane { display: none; flex-direction: column; gap: 14px; padding: 18px; overflow-y: auto; flex: 1; }
+.pane.on { display: flex; }
+.pane::-webkit-scrollbar { width: 3px; }
+.pane::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
+
+.s-head { font-family: 'DM Mono', monospace; font-size: 8.5px; letter-spacing: 2px; text-transform: uppercase; color: rgba(247,244,239,0.28); border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 5px; }
+
+/* Default hint */
+.hint { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 40px 24px; text-align: center; color: rgba(247,244,239,0.22); flex: 1; }
+.hint p { font-size: 12px; line-height: 1.7; }
+
+/* Region card */
+.rcard { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09); border-radius: 8px; overflow: hidden; animation: fup .3s ease; }
+@keyframes fup { from { opacity:0; transform:translateY(8px);} to { opacity:1; transform:translateY(0);} }
+.rcard-head { padding: 13px 15px 9px; display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.rname { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; }
+.pill { font-family: 'DM Mono', monospace; font-size: 8.5px; letter-spacing: 1px; text-transform: uppercase; padding: 3px 9px; border-radius: 20px; flex-shrink: 0; margin-top: 3px; }
+.ph { background: rgba(30,122,74,0.25); color: #5de8a0; border: 1px solid rgba(30,122,74,0.4); }
+.pm { background: rgba(232,160,32,0.2); color: #f5cc6e; border: 1px solid rgba(232,160,32,0.35); }
+.pl { background: rgba(200,55,45,0.2); color: #f08080; border: 1px solid rgba(200,55,45,0.35); }
+.rroad { padding: 0 15px 10px; font-size: 10.5px; color: rgba(247,244,239,0.48); line-height: 1.6; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.kgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: rgba(255,255,255,0.05); }
+.kcell { padding: 9px 13px; background: rgba(12,20,30,0.5); }
+.klbl { font-family: 'DM Mono', monospace; font-size: 8px; letter-spacing: 1px; text-transform: uppercase; color: rgba(247,244,239,0.32); margin-bottom: 3px; }
+.kval { font-family: 'Playfair Display', serif; font-size: 14px; color: var(--paper); }
+.kval.ca { color: #90d0ff; } .kval.cg { color: #5de8a0; } .kval.cm { color: #f5cc6e; } .kval.cr { color: #f08080; }
+.scores { padding: 11px 15px; display: flex; flex-direction: column; gap: 8px; }
+.bw { display: flex; flex-direction: column; gap: 3px; }
+.bl { display: flex; justify-content: space-between; font-size: 10px; }
+.bl span:first-child { color: rgba(247,244,239,0.5); } .bl span:last-child { font-family: 'DM Mono', monospace; font-size: 9px; color: rgba(247,244,239,0.75); }
+.bt { height: 5px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; }
+.bf { height: 100%; border-radius: 3px; transition: width .7s cubic-bezier(.4,0,.2,1); }
+.segs { padding: 9px 15px 13px; }
+.segs-ttl { font-family: 'DM Mono', monospace; font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(247,244,239,0.28); margin-bottom: 6px; }
+.stag { display: inline-block; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: rgba(247,244,239,0.65); font-size: 10px; padding: 3px 8px; border-radius: 3px; margin: 2px 2px 2px 0; }
+
+/* KPI tab */
+.khi { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 13px 15px; }
+.khl { font-family: 'DM Mono', monospace; font-size: 8.5px; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(247,244,239,0.35); margin-bottom: 4px; }
+.khv { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; line-height: 1; margin-bottom: 3px; }
+.khs { font-size: 10.5px; color: rgba(247,244,239,0.48); }
+.khbar { height: 3px; border-radius: 2px; margin-top: 7px; }
+
+/* Phase */
+.phase { display: flex; gap: 12px; padding: 11px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.phase:last-child { border-bottom: none; }
+.pnum { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'DM Mono', monospace; font-size: 10px; flex-shrink: 0; margin-top: 1px; }
+.pbody .pt { font-size: 12.5px; font-weight: 600; margin-bottom: 2px; }
+.pbody .ps { font-size: 10.5px; color: rgba(247,244,239,0.48); line-height: 1.55; }
+.ptag { font-family: 'DM Mono', monospace; font-size: 8.5px; letter-spacing: .7px; background: rgba(255,255,255,0.05); padding: 2px 7px; border-radius: 2px; color: rgba(247,244,239,0.4); margin-top: 5px; display: inline-block; }
+
+/* Eco grid */
+.eco-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.eco { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 5px; padding: 10px 12px; }
+.ecol { font-family: 'DM Mono', monospace; font-size: 8.5px; letter-spacing: 1px; text-transform: uppercase; color: rgba(247,244,239,0.32); margin-bottom: 3px; }
+.ecov { font-family: 'Playfair Display', serif; font-size: 21px; font-weight: 700; line-height: 1; }
+.ecos { font-size: 9.5px; color: rgba(247,244,239,0.35); margin-top: 2px; }
+
+/* Compete */
+.crow { display: flex; align-items: center; justify-content: space-between; padding: 9px 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 4px; }
+.cn { font-size: 13px; font-weight: 600; } .cs { font-family: 'DM Mono', monospace; font-size: 9.5px; color: rgba(247,244,239,0.38); margin-top: 1px; }
+.cp { font-family: 'Playfair Display', serif; font-size: 17px; text-align: right; }
+.cbadge { font-family: 'DM Mono', monospace; font-size: 8.5px; padding: 2px 7px; border-radius: 2px; display: block; margin-top: 2px; text-align: center; }
+.cbd { background: rgba(200,55,45,0.18); color: #f08080; }
+.cbw { background: rgba(30,122,74,0.22); color: #5de8a0; }
+
+.vrow { display: flex; justify-content: space-between; align-items: center; border-radius: 4px; padding: 8px 12px; }
+.vrl { font-size: 11.5px; font-weight: 600; }
+.vrr { font-family: 'DM Mono', monospace; font-size: 8.5px; letter-spacing: .8px; }
+
+/* ── RESPONSIVE ─────────────────────────────────────────────── */
+@media(max-width:900px){
+  header { flex-direction: column; align-items: flex-start; gap: 8px; height: auto; padding: 14px 18px; }
+  .h-right { flex-wrap: wrap; }
+  .map-area { padding: 14px 14px 10px; }
+  .map-top { flex-direction: column; gap: 10px; }
+  .map-container { min-height: 350px; }
+  .sidebar { border-left: none; border-top: 1px solid rgba(255,255,255,0.07); }
+  .legend { align-self: flex-start; }
+}
+@media(max-width:600px){
+  .h-title { font-size: 15px; }
+  .h-eyebrow { font-size: 8px; }
+  .badge { font-size: 8px; padding: 3px 8px; }
+  .map-title { font-size: 17px; }
+  .ticker { font-size: 9.5px; height: 24px; }
+  .mc-val { font-size: 15px; }
+  .mc-lbl { font-size: 7.5px; }
+  .mc { padding: 8px 10px; }
+  .eco-grid { grid-template-columns: 1fr; }
+  .kgrid { grid-template-columns: 1fr; }
+  .rname { font-size: 15px; }
+  .khv { font-size: 22px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="h-left">
+    <span class="h-eyebrow">OutThink '26 · Larsen & Toubro</span>
+    <span class="h-title">India ADAS Opportunity Intelligence Map</span>
+  </div>
+  <div class="h-right">
+    <img src="lnt_logo.png" alt="L&T" style="height:36px;width:auto;object-fit:contain;opacity:0.92;"/>
+    <span class="badge b-go">Conditional Go</span>
+    <span class="badge b-vis">Vision-Only L2</span>
+  </div>
+</header>
+
+<div class="ticker">
+  <div class="ticker-inner">
+    <span>Global ADAS <b>$94.94B by 2033</b> · +13.11% CAGR</span>
+    <span>India TAM 2030 <b>$4.5B</b> · 18% CAGR</span>
+    <span>AEB Success Rate <b>98.5%</b> wet/low-light</span>
+    <span>False Positive <b>&lt;1/500km</b></span>
+    <span>IRR <b>28.4%</b> · Hurdle 15%</span>
+    <span>NPV <b>$142M</b> @ 12% · 5 Yrs</span>
+    <span>Payback <b>3.2 Yrs</b> · Net Margin <b>25.5%</b> Y4</span>
+    <span>Bharat NCAP <b>5★ Projected</b> · Break-Even <b>45k Units</b></span>
+    <span>Global ADAS <b>$94.94B by 2033</b> · +13.11% CAGR</span>
+    <span>India TAM 2030 <b>$4.5B</b> · 18% CAGR</span>
+    <span>AEB Success Rate <b>98.5%</b> wet/low-light</span>
+    <span>False Positive <b>&lt;1/500km</b></span>
+    <span>IRR <b>28.4%</b> · Hurdle 15%</span>
+    <span>NPV <b>$142M</b> @ 12% · 5 Yrs</span>
+    <span>Payback <b>3.2 Yrs</b> · Net Margin <b>25.5%</b> Y4</span>
+    <span>Bharat NCAP <b>5★ Projected</b> · Break-Even <b>45k Units</b></span>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="map-area">
+    <div class="map-top">
+      <div>
+        <div class="map-title">Market Readiness Priority Zones</div>
+        <div class="map-sub">Click any state · Dashed lines = Golden Quadrilateral L2 Pilot Corridors · ● Smart City Zones · ◆ Data Hubs</div>
+      </div>
+      <div class="legend">
+        <div class="leg-ttl">Readiness Index</div>
+        <div class="leg-row"><span class="swatch" style="background:#1e7a4a"></span>High Priority</div>
+        <div class="leg-row"><span class="swatch" style="background:#c8a020"></span>Medium Priority</div>
+        <div class="leg-row"><span class="swatch" style="background:#7a5c3e"></span>Emerging</div>
+        <div class="divider"></div>
+        <div class="leg-row"><span class="swatch sq" style="background:#c8372d;opacity:.7"></span>GQ Corridors</div>
+        <div class="leg-row"><span class="swatch" style="background:#e8a020"></span>Smart City</div>
+        <div class="leg-row"><span class="swatch" style="background:#1a4f8a"></span>Data Hub</div>
+      </div>
+    </div>
+
+    <div class="map-container">
+      <svg id="map-svg"></svg>
+      <div id="tt"></div>
+    </div>
+
+    <div class="metric-strip">
+      <div class="mc"><span class="mc-lbl">India TAM · 2030</span><span class="mc-val">$4.5B</span><span class="mc-sub">18% CAGR · 712k units SAM</span></div>
+      <div class="mc"><span class="mc-lbl">Road Quality Rank</span><span class="mc-val">51<sup style="font-size:11px">st</sup></span><span class="mc-sub">4.5/7 expressway · 35% lane marking</span></div>
+      <div class="mc"><span class="mc-lbl">Bharat NCAP Target</span><span class="mc-val">5 ★</span><span class="mc-sub">AEB + FCW + ESC mandatory</span></div>
+      <div class="mc"><span class="mc-lbl">Break-Even Volume</span><span class="mc-val">45k</span><span class="mc-sub">Units @ 30% localization</span></div>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <div class="tabs">
+      <button class="tb on" onclick="stab('region',this)">Region</button>
+      <button class="tb" onclick="stab('kpis',this)">Safety</button>
+      <button class="tb" onclick="stab('compete',this)">Compete</button>
+    </div>
+
+    <div class="pane on" id="p-region">
+      <div class="hint" id="hint">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+        <p>Click any state on the map to explore SAM value, road quality, ADAS readiness and target segments.</p>
+      </div>
+      <div id="rdetail"></div>
+    </div>
+
+    <div class="pane" id="p-kpis">
+      <div class="s-head">Performance KPIs · Vision-Only L2</div>
+      <div class="khi"><div class="khl">AEB Success Rate</div><div class="khv" style="color:#5de8a0">98.5%</div><div class="khs">Wet / low-light · Monsoon validated</div><div class="khbar" style="background:linear-gradient(90deg,#1e7a4a 98.5%,rgba(255,255,255,0.07) 0%)"></div></div>
+      <div class="khi"><div class="khl">False Positive Rate</div><div class="khv" style="color:#90d0ff">&lt;1/500km</div><div class="khs">UX tolerance · Rural optimization ongoing</div><div class="khbar" style="background:linear-gradient(90deg,#1a4f8a 72%,rgba(255,255,255,0.07) 0%)"></div></div>
+      <div class="khi"><div class="khl">Rear-End Collision Reduction</div><div class="khv" style="color:#f5cc6e">≥25%</div><div class="khs">vs. baseline · Q2 2027 trajectory on track</div><div class="khbar" style="background:linear-gradient(90deg,#c8a020 65%,rgba(255,255,255,0.07) 0%)"></div></div>
+      <div class="khi"><div class="khl">Bharat NCAP Projected</div><div class="khv" style="color:#f08080">5 ★</div><div class="khs">AEB + FCW + ESC · All-variant fitment</div><div class="khbar" style="background:linear-gradient(90deg,#c8372d 100%,rgba(255,255,255,0.07) 0%)"></div></div>
+      <div class="s-head">False Positive by Condition</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div class="bw"><div class="bl"><span>Urban</span><span style="color:#5de8a0">0.4 ✓</span></div><div class="bt"><div class="bf" style="width:30%;background:#1e7a4a"></div></div></div>
+        <div class="bw"><div class="bl"><span>Highway</span><span style="color:#5de8a0">0.6 ✓</span></div><div class="bt"><div class="bf" style="width:44%;background:#1e7a4a"></div></div></div>
+        <div class="bw"><div class="bl"><span>Rural</span><span style="color:#f5cc6e">1.2 ⚠</span></div><div class="bt"><div class="bf" style="width:70%;background:#c8a020"></div></div></div>
+        <div class="bw"><div class="bl"><span>Monsoon</span><span style="color:#f5cc6e">0.9 ⚠</span></div><div class="bt"><div class="bf" style="width:55%;background:#b89020"></div></div></div>
+        <div class="bw"><div class="bl"><span>Night</span><span style="color:#5de8a0">0.7 ✓</span></div><div class="bt"><div class="bf" style="width:48%;background:#1a4f8a"></div></div></div>
+      </div>
+    </div>
+
+    <div class="pane" id="p-compete">
+      <div class="s-head">Pricing Benchmark · Mid-Trim ASPs</div>
+      <div style="display:flex;flex-direction:column;gap:5px">
+        <div class="crow"><div><div class="cn">Mobileye</div><div class="cs">Vision-First · EyeQ SoC</div></div><div><div class="cp" style="color:rgba(247,244,239,0.7)">$350</div><span class="cbadge cbd">+13% vs ours</span></div></div>
+        <div class="crow"><div><div class="cn">Bosch</div><div class="cs">Radar + Camera</div></div><div><div class="cp" style="color:rgba(247,244,239,0.7)">$410</div><span class="cbadge cbd">+32% vs ours</span></div></div>
+        <div class="crow"><div><div class="cn">Continental</div><div class="cs">Radar-Centric · SW-defined</div></div><div><div class="cp" style="color:rgba(247,244,239,0.7)">$400</div><span class="cbadge cbd">+29% vs ours</span></div></div>
+        <div class="crow"><div><div class="cn">ZF</div><div class="cs">Scalable safety domain</div></div><div><div class="cp" style="color:rgba(247,244,239,0.7)">$380</div><span class="cbadge cbd">+23% vs ours</span></div></div>
+        <div class="crow" style="border:1px solid rgba(30,122,74,0.45);background:rgba(30,122,74,0.07)"><div><div class="cn" style="color:#5de8a0">Our Solution</div><div class="cs">Vision-Only · Cost Leader</div></div><div><div class="cp" style="color:#5de8a0;font-size:20px;font-weight:700">$310</div><span class="cbadge cbw">SWEET SPOT</span></div></div>
+      </div>
+      <div class="s-head" style="margin-top:4px">VRIO Competitive Moats</div>
+      <div style="display:flex;flex-direction:column;gap:5px">
+        <div class="vrow" style="background:rgba(30,122,74,0.1);border:1px solid rgba(30,122,74,0.22)"><span class="vrl">India-Specific Road Data</span><span class="vrr" style="color:#5de8a0">SUSTAINED</span></div>
+        <div class="vrow" style="background:rgba(30,122,74,0.1);border:1px solid rgba(30,122,74,0.22)"><span class="vrl">Dedicated Safety Ops</span><span class="vrr" style="color:#5de8a0">SUSTAINED</span></div>
+        <div class="vrow" style="background:rgba(200,160,32,0.08);border:1px solid rgba(200,160,32,0.18)"><span class="vrl">Vision-Only Perception</span><span class="vrr" style="color:#f5cc6e">TEMPORARY</span></div>
+        <div class="vrow" style="background:rgba(200,160,32,0.08);border:1px solid rgba(200,160,32,0.18)"><span class="vrl">Insurer Partnerships</span><span class="vrr" style="color:#f5cc6e">TEMPORARY</span></div>
+        <div class="vrow" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08)"><span class="vrl">Data Loop & OTA</span><span class="vrr" style="color:#90d0ff">UNLOCK →</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────
+const REGIONS = {
+  "Jammu & Kashmir":{ r:"LOW", road:"Mountain terrain · Limited NH · Challenging winter", sam:"$5M", u:"8k", segs:["State Transport"], kpis:[["SAM","$5M",""],["Units","8k",""],["Road","2.2/7","cr"],["Lane Mkg","~8%","cr"],["GTM Phase","Phase 5+","cr"],["Segment","State CV",""]], bars:[[18,"#c8372d"],[20,"#1a4f8a"],[35,"#c8372d"]] },
+  "Ladakh":{ r:"LOW", road:"Extreme altitude · Very limited roads · Strategic zone", sam:"$1M", u:"1k", segs:["Defense/State"], kpis:[["SAM","$1M",""],["Units","1k",""],["Road","1.5/7","cr"],["Lane Mkg","~3%","cr"],["GTM Phase","Not Priority","cr"],["Segment","Defense",""]], bars:[[8,"#c8372d"],[5,"#1a4f8a"],[12,"#c8372d"]] },
+  "Himachal Pradesh":{ r:"LOW", road:"Hilly terrain · NH improving but mountain roads tough", sam:"$4M", u:"6k", segs:["State Transport","Tourism Fleet"], kpis:[["SAM","$4M",""],["Units","6k",""],["Road","2.5/7","cr"],["Lane Mkg","~10%","cr"],["GTM Phase","Phase 5+","cr"],["Segment","Tourism CV",""]], bars:[[22,"#c8372d"],[25,"#1a4f8a"],[38,"#c8372d"]] },
+  "Punjab":{ r:"HIGH", road:"Golden Quadrilateral anchor · High quality NH · Strong lane marking", sam:"$42M", u:"55k", segs:["Metro Urban PVs","Intercity Luxury"], kpis:[["SAM","$42M","ca"],["Units","55k",""],["Road","4.6/7","cg"],["Lane Mkg","~60%","cg"],["GTM Phase","Phase 1",""],["Segment","Metro PV + CV",""]], bars:[[80,"#1e7a4a"],[68,"#1a4f8a"],[85,"#c8a020"]] },
+  "Haryana":{ r:"HIGH", road:"Delhi NCR corridor · Expressway quality · Smart City zone", sam:"$65M", u:"85k", segs:["Metro Urban PVs","EV Early Adopters","Premium CV Fleets"], kpis:[["SAM","$65M","ca"],["Units","85k",""],["Road","4.7/7","cg"],["Smart City","Gurugram","cg"],["GTM Phase","Phase 1",""],["Segment","EV + Metro PV",""]], bars:[[85,"#1e7a4a"],[72,"#1a4f8a"],[90,"#c8a020"]] },
+  "Delhi":{ r:"HIGH", road:"Tier-1 Metro · Best road infra · Active V2X Smart City pilot", sam:"$295M", u:"450k", segs:["Metro Urban PVs — Primary","EV Early Adopters","Premium Fleet"], kpis:[["SAM","$295M","ca"],["Units","450k",""],["Road","4.9/7","cg"],["Smart City","Active Pilot","cg"],["GTM Phase","Phase 1 Priority",""],["Segment","Metro Urban PV",""]], bars:[[95,"#1e7a4a"],[75,"#1a4f8a"],[98,"#c8a020"]] },
+  "Uttarakhand":{ r:"LOW", road:"Mountain/pilgrim routes · Seasonal closures · NH improving", sam:"$8M", u:"10k", segs:["Tourism Fleet","State Transport"], kpis:[["SAM","$8M",""],["Units","10k",""],["Road","2.8/7","cr"],["Lane Mkg","~12%","cr"],["GTM Phase","Phase 4+","cr"],["Segment","Tourism CV",""]], bars:[[28,"#c8372d"],[30,"#1a4f8a"],[42,"#c8372d"]] },
+  "Uttar Pradesh":{ r:"MEDIUM", road:"Yamuna/Agra expressways strong · Semi-urban routes variable", sam:"$115M", u:"180k", segs:["Tier-2 Expanding PVs","Intercity Luxury Coaches","State CV Fleet"], kpis:[["SAM","$115M","ca"],["Units","180k",""],["Road","3.8/7","cm"],["Lane Mkg","~30%","cm"],["GTM Phase","Phase 2","cm"],["Segment","Tier-2 PV + CV",""]], bars:[[58,"#c8a020"],[60,"#1a4f8a"],[65,"#c8a020"]] },
+  "Bihar":{ r:"MEDIUM", road:"NH corridors improving · Dense rural traffic · Lane discipline low", sam:"$15M", u:"22k", segs:["State Transport","Commercial Vehicles"], kpis:[["SAM","$15M",""],["Units","22k",""],["Road","2.8/7","cr"],["Lane Mkg","~15%","cr"],["GTM Phase","Phase 3","cm"],["Segment","CV Fleet",""]], bars:[[35,"#c8372d"],[42,"#1a4f8a"],[50,"#c8a020"]] },
+  "Sikkim":{ r:"LOW", road:"Mountain terrain · Very limited connectivity", sam:"$1M", u:"1k", segs:["State Transport"], kpis:[["SAM","$1M",""],["Units","1k",""],["Road","1.9/7","cr"],["Lane Mkg","~5%","cr"],["GTM Phase","Not Priority","cr"],["Segment","N/A",""]], bars:[[10,"#c8372d"],[10,"#1a4f8a"],[20,"#c8372d"]] },
+  "Arunachal Pradesh":{ r:"LOW", road:"Remote · Mountainous · Strategic but not commercial priority", sam:"$2M", u:"2k", segs:["Defense/State"], kpis:[["SAM","$2M",""],["Units","2k",""],["Road","1.8/7","cr"],["Lane Mkg","~4%","cr"],["GTM Phase","Not Priority","cr"],["Segment","N/A",""]], bars:[[8,"#c8372d"],[8,"#1a4f8a"],[15,"#c8372d"]] },
+  "Nagaland":{ r:"LOW", road:"Hilly terrain · Limited NH · Rural dominant", sam:"$1M", u:"1k", segs:["State Transport"], kpis:[["SAM","$1M",""],["Units","1k",""],["Road","2.0/7","cr"],["Lane Mkg","~5%","cr"],["GTM Phase","Not Priority","cr"],["Segment","N/A",""]], bars:[[10,"#c8372d"],[10,"#1a4f8a"],[15,"#c8372d"]] },
+  "Manipur":{ r:"LOW", road:"Hilly terrain · Limited NH · Development phase", sam:"$1M", u:"1k", segs:["State Transport"], kpis:[["SAM","$1M",""],["Units","1k",""],["Road","2.1/7","cr"],["Lane Mkg","~5%","cr"],["GTM Phase","Not Priority","cr"],["Segment","N/A",""]], bars:[[10,"#c8372d"],[10,"#1a4f8a"],[15,"#c8372d"]] },
+  "Mizoram":{ r:"LOW", road:"Hilly · Limited NH · Remote", sam:"$1M", u:"1k", segs:["State Transport"], kpis:[["SAM","$1M",""],["Units","1k",""],["Road","1.9/7","cr"],["Lane Mkg","~5%","cr"],["GTM Phase","Not Priority","cr"],["Segment","N/A",""]], bars:[[8,"#c8372d"],[8,"#1a4f8a"],[15,"#c8372d"]] },
+  "Tripura":{ r:"LOW", road:"Semi-hilly · Improving NH connectivity", sam:"$2M", u:"3k", segs:["State Transport"], kpis:[["SAM","$2M",""],["Units","3k",""],["Road","2.5/7","cr"],["Lane Mkg","~10%","cr"],["GTM Phase","Phase 5+","cr"],["Segment","State CV",""]], bars:[[18,"#c8372d"],[18,"#1a4f8a"],[28,"#c8372d"]] },
+  "Meghalaya":{ r:"LOW", road:"Hilly terrain · Extreme monsoon · Limited NH", sam:"$2M", u:"2k", segs:["State Transport"], kpis:[["SAM","$2M",""],["Units","2k",""],["Road","2.2/7","cr"],["Lane Mkg","~7%","cr"],["GTM Phase","Not Priority","cr"],["Segment","N/A",""]], bars:[[12,"#c8372d"],[12,"#1a4f8a"],[18,"#c8372d"]] },
+  "Assam":{ r:"MEDIUM", road:"Brahmaputra plains · NH improving · Flood-affected sections", sam:"$12M", u:"18k", segs:["State Transport","Logistics Fleet"], kpis:[["SAM","$12M",""],["Units","18k",""],["Road","3.0/7","cm"],["Lane Mkg","~20%","cm"],["GTM Phase","Phase 3","cm"],["Segment","CV Fleet",""]], bars:[[38,"#c8a020"],[38,"#1a4f8a"],[48,"#c8a020"]] },
+  "West Bengal":{ r:"HIGH", road:"Kolkata metro + GQ eastern corridor · Emerging logistics hub", sam:"$18M", u:"12k", segs:["Intercity Luxury Coaches","Premium CV Fleets"], kpis:[["SAM","$18M","ca"],["Units","12k",""],["Road","4.0/7","cg"],["Smart City","Kolkata Pilot","cg"],["GTM Phase","Phase 2","cm"],["Segment","Intercity Luxury",""]], bars:[[70,"#1e7a4a"],[55,"#1a4f8a"],[75,"#c8a020"]] },
+  "Jharkhand":{ r:"LOW", road:"Mining corridors upgrading · Rural density high · NH improving", sam:"$6M", u:"9k", segs:["Mining Fleet","Industrial CV"], kpis:[["SAM","$6M",""],["Units","9k",""],["Road","2.7/7","cr"],["Lane Mkg","~15%","cr"],["GTM Phase","Phase 4+","cr"],["Segment","Mining CV",""]], bars:[[28,"#c8372d"],[35,"#1a4f8a"],[42,"#c8372d"]] },
+  "Odisha":{ r:"LOW", road:"Coastal NH improving · Industrial corridors · Rural roads poor", sam:"$8M", u:"12k", segs:["Mining Fleet","State Transport"], kpis:[["SAM","$8M",""],["Units","12k",""],["Road","2.5/7","cr"],["Lane Mkg","~10%","cr"],["GTM Phase","Phase 4+","cr"],["Segment","Industrial CV",""]], bars:[[25,"#c8372d"],[35,"#1a4f8a"],[40,"#c8372d"]] },
+  "Orissa":{ r:"LOW", road:"Coastal NH improving · Industrial corridors · Rural roads poor", sam:"$8M", u:"12k", segs:["Mining Fleet","State Transport"], kpis:[["SAM","$8M",""],["Units","12k",""],["Road","2.5/7","cr"],["Lane Mkg","~10%","cr"],["GTM Phase","Phase 4+","cr"],["Segment","Industrial CV",""]], bars:[[25,"#c8372d"],[35,"#1a4f8a"],[40,"#c8372d"]] },
+  "Chhattisgarh":{ r:"LOW", road:"Semi-rural · NH improving · Dense forest sections challenging", sam:"$6M", u:"9k", segs:["Industrial Fleet","State CV"], kpis:[["SAM","$6M",""],["Units","9k",""],["Road","2.9/7","cr"],["Lane Mkg","~18%","cr"],["GTM Phase","Phase 4+","cr"],["Segment","Industrial CV",""]], bars:[[30,"#c8372d"],[38,"#1a4f8a"],[45,"#c8372d"]] },
+  "Madhya Pradesh":{ r:"MEDIUM", road:"GQ connects Bhopal/Indore · Semi-urban strong · Rural challenging", sam:"$28M", u:"40k", segs:["Tier-2 Expanding PVs","State Transport Fleet"], kpis:[["SAM","$28M",""],["Units","40k",""],["Road","3.5/7","cm"],["Lane Mkg","~28%","cm"],["GTM Phase","Phase 2–3","cm"],["Segment","Tier-2 PV",""]], bars:[[50,"#c8a020"],[55,"#1a4f8a"],[62,"#c8a020"]] },
+  "Rajasthan":{ r:"MEDIUM", road:"Semi-urban/rural dominant · Variable width · Shoulder encroachments", sam:"$28M", u:"42k", segs:["Highway Fleet Trucks","State Transport Buses"], kpis:[["SAM","$28M",""],["Units","42k",""],["Road","3.2/7","cm"],["Lane Mkg","~25%","cm"],["GTM Phase","Phase 3","cm"],["Segment","CV Fleet",""]], bars:[[45,"#c8a020"],[55,"#1a4f8a"],[60,"#c8a020"]] },
+  "Gujarat":{ r:"HIGH", road:"Golden Quadrilateral anchor · Expressway quality · Industrial corridors", sam:"$52M", u:"45k", segs:["Premium CV Fleets","Logistics Hub","EV Early Adopters"], kpis:[["SAM","$52M","ca"],["Units","45k",""],["Road","4.7/7","cg"],["PLI Eligible","YES","cg"],["GTM Phase","Phase 1–2",""],["Segment","Premium CV + EV",""]], bars:[[82,"#1e7a4a"],[80,"#1a4f8a"],[88,"#c8a020"]] },
+  "Maharashtra":{ r:"HIGH", road:"Tier-1 Metro + Mumbai-Pune expressway · Strong lane marking · Data hub", sam:"$295M", u:"450k", segs:["Metro Urban PVs","EV Early Adopters","Premium CV Fleets"], kpis:[["SAM","$295M","ca"],["Units","450k",""],["Road","4.6/7","cg"],["Smart City","Mumbai + Pune","cg"],["GTM Phase","Phase 1 Priority",""],["Segment","Metro Urban PV",""]], bars:[[88,"#1e7a4a"],[75,"#1a4f8a"],[92,"#c8a020"]] },
+  "Goa":{ r:"MEDIUM", road:"Coastal highways · Good quality · High tourism PV density", sam:"$8M", u:"10k", segs:["Premium PVs","Tourism Fleet"], kpis:[["SAM","$8M",""],["Units","10k",""],["Road","4.0/7","cg"],["Lane Mkg","~45%","cm"],["GTM Phase","Phase 2","cm"],["Segment","Premium PV",""]], bars:[[62,"#c8a020"],[50,"#1a4f8a"],[72,"#c8a020"]] },
+  "Karnataka":{ r:"HIGH", road:"Bengaluru tech corridor + coastal highways · Strong OEM base", sam:"$295M", u:"450k", segs:["Metro Urban PVs","EV Early Adopters","Tech OEM Integration"], kpis:[["SAM","$295M","ca"],["Units","450k",""],["Road","4.4/7","cg"],["OEM Partners","Maruti, Toyota","cg"],["GTM Phase","Phase 1",""],["Segment","EV + Metro PV",""]], bars:[[85,"#1e7a4a"],[72,"#1a4f8a"],[90,"#c8a020"]] },
+  "Andhra Pradesh":{ r:"MEDIUM", road:"Vijayawada corridor · Hyderabad expressways strong · Rural patchy", sam:"$30M", u:"28k", segs:["Premium CV Fleets","EV Early Adopters"], kpis:[["SAM","$30M",""],["Units","28k",""],["Road","3.9/7","cm"],["Smart City","Vizag Pilot","cm"],["GTM Phase","Phase 2","cm"],["Segment","CV + EV",""]], bars:[[58,"#c8a020"],[60,"#1a4f8a"],[68,"#c8a020"]] },
+  "Telangana":{ r:"MEDIUM", road:"Hyderabad ORR · Good expressways · IT corridor integration", sam:"$35M", u:"38k", segs:["EV Early Adopters","Premium CV Fleets","IT Corridor PVs"], kpis:[["SAM","$35M",""],["Units","38k",""],["Road","4.1/7","cg"],["Smart City","Hyderabad","cm"],["GTM Phase","Phase 2","cm"],["Segment","EV + Premium PV",""]], bars:[[65,"#c8a020"],[62,"#1a4f8a"],[72,"#c8a020"]] },
+  "Kerala":{ r:"MEDIUM", road:"Dense urban + coastal · Good quality · Heavy traffic · High PV density", sam:"$18M", u:"12k", segs:["Premium PVs","Tourism Fleet","Intercity Luxury"], kpis:[["SAM","$18M",""],["Units","12k",""],["Road","4.1/7","cg"],["Smart City","Kochi Pilot","cm"],["GTM Phase","Phase 2","cm"],["Segment","Premium PV",""]], bars:[[62,"#c8a020"],[50,"#1a4f8a"],[74,"#c8a020"]] },
+  "Tamil Nadu":{ r:"HIGH", road:"Chennai GQ anchor · Expressway quality · OEM factory base · Port logistics", sam:"$295M", u:"450k", segs:["Metro Urban PVs","Premium CV Fleets","OEM Factory Integration"], kpis:[["SAM","$295M","ca"],["Units","450k",""],["Road","4.5/7","cg"],["OEM Partners","Hyundai, BMW","cg"],["GTM Phase","Phase 1",""],["Segment","OEM + Metro PV",""]], bars:[[87,"#1e7a4a"],[78,"#1a4f8a"],[91,"#c8a020"]] },
+  "Puducherry":{ r:"MEDIUM", road:"Urban · Good road quality · Small market", sam:"$3M", u:"4k", segs:["Premium PVs"], kpis:[["SAM","$3M",""],["Units","4k",""],["Road","3.8/7","cm"],["Lane Mkg","~40%","cm"],["GTM Phase","Phase 3","cm"],["Segment","Premium PV",""]], bars:[[55,"#c8a020"],[45,"#1a4f8a"],[60,"#c8a020"]] },
+};
+const COL = { HIGH:"#1e7a4a", MEDIUM:"#c8a020", LOW:"#7a5c3e" };
+const BAR_LABELS = ["ADAS Readiness","BOM Localization","Regulatory Score"];
+const CITIES = [
+  {n:"Delhi",lat:28.6139,lon:77.209,t:"smart",link:"Delhi"},
+  {n:"Mumbai",lat:19.076,lon:72.8777,t:"smart",link:"Maharashtra"},
+  {n:"Bengaluru",lat:12.9716,lon:77.5946,t:"smart",link:"Karnataka"},
+  {n:"Chennai",lat:13.0827,lon:80.2707,t:"smart",link:"Tamil Nadu"},
+  {n:"Kolkata",lat:22.5726,lon:88.3639,t:"smart",link:"West Bengal"},
+  {n:"Ahmedabad",lat:23.0225,lon:72.5714,t:"smart",link:"Gujarat"},
+  {n:"Hyderabad",lat:17.385,lon:78.4867,t:"smart",link:"Telangana"},
+  {n:"Pune",lat:18.5204,lon:73.8567,t:"hub",link:"Maharashtra"},
+  {n:"Jaipur",lat:26.9124,lon:75.7873,t:"hub",link:"Rajasthan"},
+  {n:"Lucknow",lat:26.8467,lon:80.9462,t:"hub",link:"Uttar Pradesh"},
+];
+
+// ── D3 MAP ──────────────────────────────────────────────────────────
+const svg = d3.select("#map-svg");
+const mc = document.querySelector(".map-container");
+let geoData, proj, pathFn;
+
+function buildMap(geo) {
+  geoData = geo;
+  const W = mc.clientWidth, H = mc.clientHeight;
+  svg.attr("viewBox",`0 0 ${W} ${H}`).attr("width",W).attr("height",H);
+  svg.selectAll("*").remove();
+  svg.on(".zoom", null);
+
+  proj = d3.geoMercator().fitExtent([[14,14],[W-14,H-14]], geo);
+  pathFn = d3.geoPath().projection(proj);
+
+  // Ocean bg
+  svg.append("rect").attr("width",W).attr("height",H)
+    .attr("fill","url(#oceanGrad)").attr("rx",9);
+
+  // Defs
+  const defs = svg.append("defs");
+  const og = defs.append("linearGradient").attr("id","oceanGrad").attr("x1","0%").attr("y1","0%").attr("x2","100%").attr("y2","100%");
+  og.append("stop").attr("offset","0%").attr("stop-color","#a8d8e8");
+  og.append("stop").attr("offset","100%").attr("stop-color","#b8e0ec");
+
+  // subtle grid
+  const grid = svg.append("g").attr("opacity",0.08);
+  for(let x=0;x<W;x+=24) grid.append("line").attr("x1",x).attr("y1",0).attr("x2",x).attr("y2",H).attr("stroke","#1a4f8a").attr("stroke-width",.4);
+  for(let y=0;y<H;y+=24) grid.append("line").attr("x1",0).attr("y1",y).attr("x2",W).attr("y2",y).attr("stroke","#1a4f8a").attr("stroke-width",.4);
+
+  // Drop shadow filter
+  const f = defs.append("filter").attr("id","drop").attr("x","-5%").attr("y","-5%").attr("width","110%").attr("height","110%");
+  f.append("feDropShadow").attr("dx",0).attr("dy",2).attr("stdDeviation",3).attr("flood-color","rgba(15,25,35,0.18)");
+
+  // State paths
+  const statesG = svg.append("g").attr("filter","url(#drop)");
+  statesG.selectAll(".state")
+    .data(geo.features)
+    .enter().append("path")
+    .attr("class","state")
+    .attr("d", pathFn)
+    .attr("fill", d => {
+      const n = d.properties.NAME_1 || d.properties.name || d.properties.ST_NM;
+      return COL[(REGIONS[n]||{r:"LOW"}).r] || "#9a7a5e";
+    })
+    .attr("opacity", 0.87)
+    .on("mouseover", function(e,d){
+      const n = getName(d);
+      const rd = REGIONS[n];
+      const tt = document.getElementById("tt");
+      tt.textContent = rd ? `${n}  ·  ${rd.r}  ·  SAM ${rd.sam}` : n;
+      tt.classList.add("on");
+    })
+    .on("mousemove", function(e){
+      const r = mc.getBoundingClientRect();
+      const tt = document.getElementById("tt");
+      tt.style.left = (e.clientX - r.left + 14) + "px";
+      tt.style.top  = (e.clientY - r.top  - 36) + "px";
+    })
+    .on("mouseout", () => document.getElementById("tt").classList.remove("on"))
+    .on("click", function(e,d){
+      svg.selectAll(".state").classed("sel",false);
+      d3.select(this).classed("sel",true);
+      showRegion(getName(d));
+    });
+
+  // State name labels
+  const BIG = ["Maharashtra","Rajasthan","Madhya Pradesh","Uttar Pradesh","Gujarat","Karnataka","Andhra Pradesh","Tamil Nadu","Odisha","West Bengal","Telangana","Bihar"];
+  svg.append("g").selectAll(".state-lbl")
+    .data(geo.features.filter(d => BIG.includes(getName(d))))
+    .enter().append("text")
+    .attr("class","state-lbl")
+    .attr("x", d => pathFn.centroid(d)[0])
+    .attr("y", d => pathFn.centroid(d)[1])
+    .attr("text-anchor","middle").attr("dominant-baseline","middle")
+    .attr("font-size", d => {
+      const a = pathFn.area(d);
+      return a > 4000 ? 8.5 : a > 2000 ? 7.5 : 7;
+    })
+    .text(d => {
+      const n = getName(d);
+      const abbr = {"Madhya Pradesh":"MP","Uttar Pradesh":"UP","Andhra Pradesh":"AP","West Bengal":"W. Bengal"};
+      return abbr[n] || n;
+    });
+
+  // SAM labels for top markets
+  const SAM_STATES = ["Maharashtra","Tamil Nadu","Karnataka","Gujarat","Uttar Pradesh"];
+  svg.append("g").selectAll(".sam-lbl")
+    .data(geo.features.filter(d => SAM_STATES.includes(getName(d))))
+    .enter().append("text")
+    .attr("class","sam-lbl")
+    .attr("x", d => pathFn.centroid(d)[0])
+    .attr("y", d => pathFn.centroid(d)[1] + 11)
+    .attr("text-anchor","middle").attr("font-size",6.5)
+    .text(d => (REGIONS[getName(d)]||{sam:""}).sam + " SAM");
+
+  // Corridors
+  const cmap = {};
+  CITIES.forEach(c => cmap[c.n] = proj([c.lon,c.lat]));
+  [["Delhi","Mumbai"],["Delhi","Kolkata"],["Mumbai","Chennai"],["Kolkata","Chennai"],["Delhi","Bengaluru"],["Ahmedabad","Mumbai"]].forEach(([a,b])=>{
+    const pa = cmap[a], pb = cmap[b];
+    if(pa && pb) svg.append("line").attr("class","corridor")
+      .attr("x1",pa[0]).attr("y1",pa[1]).attr("x2",pb[0]).attr("y2",pb[1]);
+  });
+
+  // City markers
+  CITIES.forEach(c => {
+    const [cx,cy] = proj([c.lon,c.lat]);
+    const isSmart = c.t==="smart";
+    const col = isSmart ? "#e8a020" : "#1a4f8a";
+    const r1 = isSmart ? 9 : 7;
+    const r2 = isSmart ? 5 : 3.5;
+
+    svg.append("circle").attr("class","city-ring")
+      .attr("cx",cx).attr("cy",cy).attr("r",r1)
+      .attr("stroke",col).attr("stroke-width", isSmart ? 1.5 : 1.2);
+
+    svg.append("circle").attr("class","city-dot-el")
+      .attr("cx",cx).attr("cy",cy).attr("r",r2)
+      .attr("fill",col).attr("stroke","white").attr("stroke-width",1.5)
+      .on("click",()=>showRegion(c.link));
+
+    const anchor = cx > W*0.65 ? "end" : "start";
+    const dx = cx > W*0.65 ? -r1-3 : r1+3;
+    svg.append("text")
+      .attr("x",cx+dx).attr("y",cy+1)
+      .attr("text-anchor",anchor).attr("dominant-baseline","middle")
+      .attr("font-family","DM Mono, monospace").attr("font-size","7.5")
+      .attr("font-weight","500").attr("fill", isSmart ? "#f5cc6e" : "#90d0ff")
+      .attr("pointer-events","none")
+      .text(c.n);
+  });
+
+  // Zoom & pan
+  const svgNode = svg.node();
+  const zoomG = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  Array.from(svgNode.children).forEach(child => {
+    if ((child.tagName === 'rect' && !zoomG.children.length) || child.tagName === 'defs') return;
+    zoomG.appendChild(child);
+  });
+  svgNode.appendChild(zoomG);
+  const zoomSel = d3.select(zoomG);
+  const zoom = d3.zoom().scaleExtent([0.5, 8]).on("zoom", (event) => {
+    zoomSel.attr("transform", event.transform);
+  });
+  svg.call(zoom);
+}
+
+function getName(d) {
+  const raw = d.properties.NAME_1 || d.properties.name || d.properties.ST_NM || d.properties.NAME || d.properties.st_nm || d.properties.state || "";
+  return NAME_MAP[raw] || raw;
+}
+
+// ── SHOW REGION ───────────────────────────────────────────────────────
+function showRegion(name) {
+  const rd = REGIONS[name];
+  if (!rd) return;
+  stab("region", document.querySelector(".tb.on") || document.querySelectorAll(".tb")[0]);
+
+  const pc = rd.r==="HIGH"?"ph":rd.r==="MEDIUM"?"pm":"pl";
+  let kpis = '<div class="kgrid">';
+  rd.kpis.forEach(([l,v,c]) => { kpis += `<div class="kcell"><div class="klbl">${l}</div><div class="kval ${c}">${v}</div></div>`; });
+  kpis += "</div>";
+
+  let bars = '<div class="scores">';
+  rd.bars.forEach(([v,col],i) => {
+    bars += `<div class="bw"><div class="bl"><span>${BAR_LABELS[i]}</span><span>${v}%</span></div><div class="bt"><div class="bf" style="width:0%;background:${col}" data-t="${v}%"></div></div></div>`;
+  });
+  bars += "</div>";
+
+  let segs = '<div class="segs"><div class="segs-ttl">Target Segments</div>';
+  rd.segs.forEach(s => { segs += `<span class="stag">${s}</span>`; });
+  segs += "</div>";
+
+  document.getElementById("hint").style.display = "none";
+  document.getElementById("rdetail").innerHTML =
+    `<div class="rcard">
+      <div class="rcard-head"><div class="rname">${name}</div><span class="pill ${pc}">${rd.r}</span></div>
+      <div class="rroad">${rd.road}</div>
+      ${kpis}${bars}${segs}
+    </div>`;
+
+  requestAnimationFrame(() => {
+    document.querySelectorAll(".bf").forEach(el => { el.style.width = el.dataset.t; });
+  });
+}
+
+// ── TAB SWITCH ────────────────────────────────────────────────────────
+function stab(id, btn) {
+  document.querySelectorAll(".tb").forEach(b => b.classList.remove("on"));
+  if (btn) btn.classList.add("on");
+  else document.querySelectorAll(".tb").forEach((b,i) => { if(["region","kpis","compete"][i]===id) b.classList.add("on"); });
+  document.querySelectorAll(".pane").forEach(p => p.classList.remove("on"));
+  document.getElementById("p-"+id).classList.add("on");
+}
+
+// ── LOAD GEOJSON ──────────────────────────────────────────────────────
+const URLS = [
+  "https://raw.githubusercontent.com/Subhash9325/GeoJson-Data-of-Indian-States/master/Indian_States",
+  "https://raw.githubusercontent.com/datta07/INDIAN-SHAPEFILES/master/STATE_BOUNDARY/STATE_BOUNDARY.geojson",
+  "https://raw.githubusercontent.com/geohacker/india/master/state/india_state.geojson",
+  "https://cdn.jsdelivr.net/npm/india-states-topojson@1.0.1/india-states.geojson"
+];
+
+// Map alternate state names in GeoJSON to our REGIONS keys
+const NAME_MAP = {
+  "Jammu and Kashmir": "Jammu & Kashmir",
+  "Jammu And Kashmir": "Jammu & Kashmir",
+  "NCT of Delhi": "Delhi",
+  "Andaman and Nicobar Islands": "Andaman & Nicobar",
+  "Dadra and Nagar Haveli and Daman and Diu": "Dadra & Nagar Haveli",
+  "Dadra and Nagar Haveli": "Dadra & Nagar Haveli",
+  "The Government of NCT of Delhi": "Delhi",
+  "Orissa": "Odisha",
+  "Orisa": "Odisha",
+  "Odhisa": "Odisha",
+};
+
+function normaliseStateName(d) {
+  let n = d.properties.NAME_1 || d.properties.name || d.properties.ST_NM || d.properties.NAME || d.properties.st_nm || d.properties.state || "";
+  return NAME_MAP[n] || n;
+}
+
+// URL for the corrected J&K + Ladakh boundary (includes PoK, Aksai Chin, Siachen)
+const JK_URL = "https://raw.githubusercontent.com/india-in-data/kashmir/master/kashmir_geo_final.geojson";
+
+async function loadMap() {
+  let geo = null;
+  // 1. Load base India states GeoJSON
+  for (const url of URLS) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) continue;
+      geo = await res.json();
+      if (geo.features && geo.features.length) break;
+      geo = null;
+    } catch(e) { geo = null; }
+  }
+  if (!geo) {
+    mc.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:rgba(15,25,35,0.4);font-family:'DM Mono',monospace;font-size:12px;text-align:center;padding:24px;flex-direction:column;gap:10px"><div style="font-size:32px">🗺️</div><div>Map requires internet access<br>to load state boundaries.</div></div>`;
+    return;
+  }
+
+  // Normalise property names
+  geo.features.forEach(f => {
+    const raw = f.properties.NAME_1 || f.properties.name || f.properties.ST_NM || f.properties.NAME || f.properties.st_nm || f.properties.state || "";
+    f.properties.NAME_1 = NAME_MAP[raw] || raw;
+  });
+
+  // 2. Fetch corrected Kashmir/Ladakh boundary & merge
+  try {
+    const jkRes = await fetch(JK_URL);
+    if (jkRes.ok) {
+      const jkGeo = await jkRes.json();
+      if (jkGeo.features && jkGeo.features.length) {
+        // Remove old J&K and Ladakh features from base
+        geo.features = geo.features.filter(f => {
+          const n = f.properties.NAME_1;
+          return n !== "Jammu & Kashmir" && n !== "Jammu and Kashmir" && n !== "Ladakh";
+        });
+        // Add corrected features with proper NAME_1
+        jkGeo.features.forEach(f => {
+          const d = (f.properties.district || "").toUpperCase();
+          if (d === "JK" || d === "JAMMU AND KASHMIR" || d === "JAMMU & KASHMIR") {
+            f.properties.NAME_1 = "Jammu & Kashmir";
+          } else if (d === "LADAKH" || d === "LA" || d === "LD") {
+            f.properties.NAME_1 = "Ladakh";
+          } else {
+            // Single combined J&K + Ladakh outline — assign as J&K
+            f.properties.NAME_1 = "Jammu & Kashmir";
+          }
+          geo.features.push(f);
+        });
+      }
+    }
+  } catch(e) { /* use base J&K if fetch fails */ }
+
+  buildMap(geo);
+}
+
+loadMap();
+window.addEventListener("resize", () => { if(geoData) buildMap(geoData); });
+</script>
+</body>
+</html>
