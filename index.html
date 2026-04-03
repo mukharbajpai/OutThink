@@ -67,16 +67,17 @@ header {
   flex: 1;
   position: relative;
   overflow: hidden;
-  border-radius: 10px;
-  background: linear-gradient(145deg, #b8dfe8 0%, #cde8f0 40%, #b0d8e4 100%);
-  border: 1px solid rgba(26,79,138,0.2);
-  box-shadow: 0 6px 40px rgba(15,25,35,0.12), inset 0 1px 0 rgba(255,255,255,0.6);
+  border-radius: 18px;
+  background: linear-gradient(145deg, #a8d4e3 0%, #bfe0ec 42%, #acd3e1 100%);
+  border: 2px solid rgba(255,255,255,0.55);
+  outline: 1px solid rgba(26,79,138,0.18);
+  box-shadow: 0 10px 44px rgba(15,25,35,0.14), inset 0 1px 0 rgba(255,255,255,0.7), inset 0 0 0 10px rgba(255,255,255,0.06);
 }
 #map-svg { width: 100%; height: 100%; display: block; }
 
-.state { cursor: pointer; transition: filter 0.15s, stroke-width 0.15s, opacity 0.15s; stroke: rgba(255,255,255,0.75); stroke-width: 0.7; stroke-linejoin: round; }
-.state:hover { filter: brightness(1.18) saturate(1.15); stroke: white; stroke-width: 1.8; }
-.state.sel { stroke: #0f1923; stroke-width: 2.2; filter: brightness(1.1) saturate(1.2); }
+.state { cursor: pointer; transition: filter 0.15s, stroke-width 0.15s, opacity 0.15s; stroke: rgba(255,255,255,0.96); stroke-width: 1.35; stroke-linejoin: round; }
+.state:hover { filter: brightness(1.15) saturate(1.08); stroke: white; stroke-width: 2.1; }
+.state.sel { stroke: #fff7ea; stroke-width: 2.6; filter: brightness(1.06) saturate(1.12); }
 
 .corridor { fill: none; stroke: #c8372d; stroke-width: 1.8; stroke-dasharray: 6,4; opacity: 0.55; pointer-events: none; }
 .city-ring { fill: none; stroke-width: 1; opacity: 0.4; pointer-events: none; }
@@ -229,22 +230,24 @@ header {
 
 <div class="ticker">
   <div class="ticker-inner">
-    <span>Global ADAS <b>$94.94B by 2033</b> · +13.11% CAGR</span>
-    <span>India TAM 2030 <b>$4.5B</b> · 18% CAGR</span>
+    <span>Global ADAS <b>$8.13B by 2033</b> · 13.35% CAGR</span>
+    <span>India TAM 2030 <b>$456M</b> · 11.55% CAGR</span>
+    <span>SAM 2030 <b>$124.48M</b> · SOM <b>$12.44M</b></span>
     <span>AEB Success Rate <b>98.5%</b> wet/low-light</span>
-    <span>False Positive <b>&lt;1/500km</b></span>
-    <span>IRR <b>28.4%</b> · Hurdle 15%</span>
-    <span>NPV <b>$142M</b> @ 12% · 5 Yrs</span>
-    <span>Payback <b>3.2 Yrs</b> · Net Margin <b>25.5%</b> Y4</span>
-    <span>Bharat NCAP <b>5★ Projected</b> · Break-Even <b>45k Units</b></span>
-    <span>Global ADAS <b>$94.94B by 2033</b> · +13.11% CAGR</span>
-    <span>India TAM 2030 <b>$4.5B</b> · 18% CAGR</span>
+    <span>False Positive <b>1 / 500km</b> target</span>
+    <span>IRR <b>18%</b> · Hurdle 15%</span>
+    <span>NPV <b>$35M–$55M</b> @ 12%</span>
+    <span>Payback <b>4 Years</b> · Net Margin <b>18–20%</b></span>
+    <span>Bharat NCAP <b>5★ Projected</b> · Break-Even <b>80k Units</b></span>
+    <span>Global ADAS <b>$8.13B by 2033</b> · 13.35% CAGR</span>
+    <span>India TAM 2030 <b>$456M</b> · 11.55% CAGR</span>
+    <span>SAM 2030 <b>$124.48M</b> · SOM <b>$12.44M</b></span>
     <span>AEB Success Rate <b>98.5%</b> wet/low-light</span>
-    <span>False Positive <b>&lt;1/500km</b></span>
-    <span>IRR <b>28.4%</b> · Hurdle 15%</span>
-    <span>NPV <b>$142M</b> @ 12% · 5 Yrs</span>
-    <span>Payback <b>3.2 Yrs</b> · Net Margin <b>25.5%</b> Y4</span>
-    <span>Bharat NCAP <b>5★ Projected</b> · Break-Even <b>45k Units</b></span>
+    <span>False Positive <b>1 / 500km</b> target</span>
+    <span>IRR <b>18%</b> · Hurdle 15%</span>
+    <span>NPV <b>$35M–$55M</b> @ 12%</span>
+    <span>Payback <b>4 Years</b> · Net Margin <b>18–20%</b></span>
+    <span>Bharat NCAP <b>5★ Projected</b> · Break-Even <b>80k Units</b></span>
   </div>
 </div>
 
@@ -273,10 +276,10 @@ header {
     </div>
 
     <div class="metric-strip">
-      <div class="mc"><span class="mc-lbl">India TAM · 2030</span><span class="mc-val">$4.5B</span><span class="mc-sub">18% CAGR · 712k units SAM</span></div>
-      <div class="mc"><span class="mc-lbl">Road Quality Rank</span><span class="mc-val">51<sup style="font-size:11px">st</sup></span><span class="mc-sub">4.5/7 expressway · 35% lane marking</span></div>
-      <div class="mc"><span class="mc-lbl">Bharat NCAP Target</span><span class="mc-val">5 ★</span><span class="mc-sub">AEB + FCW + ESC mandatory</span></div>
-      <div class="mc"><span class="mc-lbl">Break-Even Volume</span><span class="mc-val">45k</span><span class="mc-sub">Units @ 30% localization</span></div>
+      <div class="mc"><span class="mc-lbl">India TAM · 2030</span><span class="mc-val">$456M</span><span class="mc-sub">11.55% CAGR · Full market</span></div>
+      <div class="mc"><span class="mc-lbl">Serviceable Market</span><span class="mc-val">$124.48M</span><span class="mc-sub">SOM $12.44M · Focused entry</span></div>
+      <div class="mc"><span class="mc-lbl">Bharat NCAP Target</span><span class="mc-val">5 ★</span><span class="mc-sub">AEB + FCW + ESC all-variant fitment</span></div>
+      <div class="mc"><span class="mc-lbl">Break-Even Volume</span><span class="mc-val">80k</span><span class="mc-sub">Units @ 20% localization</span></div>
     </div>
   </div>
 
@@ -285,6 +288,7 @@ header {
       <button class="tb on" onclick="stab('region',this)">Region</button>
       <button class="tb" onclick="stab('kpis',this)">Safety</button>
       <button class="tb" onclick="stab('compete',this)">Compete</button>
+      <button class="tb" onclick="stab('logic',this)">Logic</button>
     </div>
 
     <div class="pane on" id="p-region">
@@ -297,10 +301,10 @@ header {
 
     <div class="pane" id="p-kpis">
       <div class="s-head">Performance KPIs · Vision-Only L2</div>
-      <div class="khi"><div class="khl">AEB Success Rate</div><div class="khv" style="color:#5de8a0">98.5%</div><div class="khs">Wet / low-light · Monsoon validated</div><div class="khbar" style="background:linear-gradient(90deg,#1e7a4a 98.5%,rgba(255,255,255,0.07) 0%)"></div></div>
-      <div class="khi"><div class="khl">False Positive Rate</div><div class="khv" style="color:#90d0ff">&lt;1/500km</div><div class="khs">UX tolerance · Rural optimization ongoing</div><div class="khbar" style="background:linear-gradient(90deg,#1a4f8a 72%,rgba(255,255,255,0.07) 0%)"></div></div>
-      <div class="khi"><div class="khl">Rear-End Collision Reduction</div><div class="khv" style="color:#f5cc6e">≥25%</div><div class="khs">vs. baseline · Q2 2027 trajectory on track</div><div class="khbar" style="background:linear-gradient(90deg,#c8a020 65%,rgba(255,255,255,0.07) 0%)"></div></div>
-      <div class="khi"><div class="khl">Bharat NCAP Projected</div><div class="khv" style="color:#f08080">5 ★</div><div class="khs">AEB + FCW + ESC · All-variant fitment</div><div class="khbar" style="background:linear-gradient(90deg,#c8372d 100%,rgba(255,255,255,0.07) 0%)"></div></div>
+      <div class="khi"><div class="khl">AEB Success Rate</div><div class="khv" style="color:#5de8a0">98.5%</div><div class="khs">In wet / low-light conditions</div><div class="khbar" style="background:linear-gradient(90deg,#1e7a4a 98.5%,rgba(255,255,255,0.07) 0%)"></div></div>
+      <div class="khi"><div class="khl">False Positive Rate</div><div class="khv" style="color:#90d0ff">1 / 500km</div><div class="khs">Within UX tolerance limit</div><div class="khbar" style="background:linear-gradient(90deg,#1a4f8a 70%,rgba(255,255,255,0.07) 0%)"></div></div>
+      <div class="khi"><div class="khl">Rear-End Collision Reduction</div><div class="khv" style="color:#f5cc6e">25%</div><div class="khs">Target vs baseline</div><div class="khbar" style="background:linear-gradient(90deg,#c8a020 65%,rgba(255,255,255,0.07) 0%)"></div></div>
+      <div class="khi"><div class="khl">Bharat NCAP Projected</div><div class="khv" style="color:#f08080">5 ★</div><div class="khs">Projected safety rating</div><div class="khbar" style="background:linear-gradient(90deg,#c8372d 100%,rgba(255,255,255,0.07) 0%)"></div></div>
       <div class="s-head">False Positive by Condition</div>
       <div style="display:flex;flex-direction:column;gap:8px">
         <div class="bw"><div class="bl"><span>Urban</span><span style="color:#5de8a0">0.4 ✓</span></div><div class="bt"><div class="bf" style="width:30%;background:#1e7a4a"></div></div></div>
@@ -311,14 +315,23 @@ header {
       </div>
     </div>
 
+    <div class="pane" id="p-logic">
+      <div class="s-head">Decision Logic · PDF Aligned</div>
+      <div class="khi"><div class="khl">TAM → SAM → SOM</div><div class="khs">TAM is the full India ADAS opportunity by 2030 at <b>$456M</b>. SAM narrows this to the most serviceable focus segments at <b>$124.48M</b>. SOM is the realistic early capture at <b>$12.44M</b>.</div></div>
+      <div class="khi"><div class="khl">Segment logic</div><div class="khs">The rollout prioritizes premium passenger vehicles, commercial fleets, and ride-hailing or taxi fleets because safety ROI, feature willingness, and daily use intensity are stronger here.</div></div>
+      <div class="khi"><div class="khl">Cost logic</div><div class="khs">The proposal is vision-first and fusion-ready. That lowers BOM versus radar-heavy alternatives and supports a target ASP of <b>$360</b> while keeping room for localization.</div></div>
+      <div class="khi"><div class="khl">Financial logic</div><div class="khs">The model assumes phased scale-up, break-even at about <b>80k units</b> annually with <b>20% localization</b>, <b>18%</b> IRR, <b>$35M–$55M</b> NPV, and payback in about <b>4 years</b>.</div></div>
+      <div class="khi"><div class="khl">Map logic</div><div class="khs">State colors represent rollout readiness, not just size. The map favors corridor quality, urban density, OEM access, and early commercial fit for L&amp;T deployment partnerships.</div></div>
+    </div>
+
     <div class="pane" id="p-compete">
       <div class="s-head">Pricing Benchmark · Mid-Trim ASPs</div>
       <div style="display:flex;flex-direction:column;gap:5px">
-        <div class="crow"><div><div class="cn">Mobileye</div><div class="cs">Vision-First · EyeQ SoC</div></div><div><div class="cp" style="color:rgba(247,244,239,0.7)">$350</div><span class="cbadge cbd">+13% vs ours</span></div></div>
-        <div class="crow"><div><div class="cn">Bosch</div><div class="cs">Radar + Camera</div></div><div><div class="cp" style="color:rgba(247,244,239,0.7)">$410</div><span class="cbadge cbd">+32% vs ours</span></div></div>
-        <div class="crow"><div><div class="cn">Continental</div><div class="cs">Radar-Centric · SW-defined</div></div><div><div class="cp" style="color:rgba(247,244,239,0.7)">$400</div><span class="cbadge cbd">+29% vs ours</span></div></div>
-        <div class="crow"><div><div class="cn">ZF</div><div class="cs">Scalable safety domain</div></div><div><div class="cp" style="color:rgba(247,244,239,0.7)">$380</div><span class="cbadge cbd">+23% vs ours</span></div></div>
-        <div class="crow" style="border:1px solid rgba(30,122,74,0.45);background:rgba(30,122,74,0.07)"><div><div class="cn" style="color:#5de8a0">Our Solution</div><div class="cs">Vision-Only · Cost Leader</div></div><div><div class="cp" style="color:#5de8a0;font-size:20px;font-weight:700">$310</div><span class="cbadge cbw">SWEET SPOT</span></div></div>
+        <div class="crow"><div><div class="cn">Mobileye</div><div class="cs">Vision-First · EyeQ SoC</div></div><div><div class="cp" style="color:rgba(247,244,239,0.7)">$350</div><span class="cbadge cbd">-3% vs ours</span></div></div>
+        <div class="crow"><div><div class="cn">Bosch</div><div class="cs">Radar + Camera</div></div><div><div class="cp" style="color:rgba(247,244,239,0.7)">$410</div><span class="cbadge cbd">+14% vs ours</span></div></div>
+        <div class="crow"><div><div class="cn">Continental</div><div class="cs">Radar-Centric · SW-defined</div></div><div><div class="cp" style="color:rgba(247,244,239,0.7)">$400</div><span class="cbadge cbd">+11% vs ours</span></div></div>
+        <div class="crow"><div><div class="cn">ZF</div><div class="cs">Scalable safety domain control</div></div><div><div class="cp" style="color:rgba(247,244,239,0.7)">$380</div><span class="cbadge cbd">+6% vs ours</span></div></div>
+        <div class="crow" style="border:1px solid rgba(30,122,74,0.45);background:rgba(30,122,74,0.07)"><div><div class="cn" style="color:#5de8a0">Our Solution</div><div class="cs">Vision-Only · Value Leader</div></div><div><div class="cp" style="color:#5de8a0;font-size:20px;font-weight:700">$360</div><span class="cbadge cbw">VALUE LEADER</span></div></div>
       </div>
       <div class="s-head" style="margin-top:4px">VRIO Competitive Moats</div>
       <div style="display:flex;flex-direction:column;gap:5px">
@@ -370,7 +383,7 @@ const REGIONS = {
   "Puducherry":{ r:"MEDIUM", road:"Urban · Good road quality · Small market", sam:"$3M", u:"4k", segs:["Premium PVs"], kpis:[["SAM","$3M",""],["Units","4k",""],["Road","3.8/7","cm"],["Lane Mkg","~40%","cm"],["GTM Phase","Phase 3","cm"],["Segment","Premium PV",""]], bars:[[55,"#c8a020"],[45,"#1a4f8a"],[60,"#c8a020"]] },
 };
 const COL = { HIGH:"#1e7a4a", MEDIUM:"#c8a020", LOW:"#7a5c3e" };
-const BAR_LABELS = ["ADAS Readiness","BOM Localization","Regulatory Score"];
+const BAR_LABELS = ["ADAS Readiness","Localization Ease","Go-to-Market Fit"];
 const CITIES = [
   {n:"Delhi",lat:28.6139,lon:77.209,t:"smart",link:"Delhi"},
   {n:"Mumbai",lat:19.076,lon:72.8777,t:"smart",link:"Maharashtra"},
@@ -575,7 +588,7 @@ function showRegion(name) {
 function stab(id, btn) {
   document.querySelectorAll(".tb").forEach(b => b.classList.remove("on"));
   if (btn) btn.classList.add("on");
-  else document.querySelectorAll(".tb").forEach((b,i) => { if(["region","kpis","compete"][i]===id) b.classList.add("on"); });
+  else document.querySelectorAll(".tb").forEach((b,i) => { if(["region","kpis","compete","logic"][i]===id) b.classList.add("on"); });
   document.querySelectorAll(".pane").forEach(p => p.classList.remove("on"));
   document.getElementById("p-"+id).classList.add("on");
 }
